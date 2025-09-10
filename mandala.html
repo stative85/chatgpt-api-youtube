@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hydra Mandala</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <style>
+        body { margin: 0; background: #000; }
+        canvas { display: block; }
+        #status { position: absolute; top: 10px; left: 10px; color: #ff5500; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <div id="status">Connecting to the Swarm...</div>
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const geometry = new THREE.BufferGeometry();
+        const material = new THREE.PointsMaterial({ size: 0.05, vertexColors: true });
+        const points = new THREE.Points(geometry, material);
+        scene.add(points);
+        camera.position.z = 2;
+
+        const ws = new WebSocket('ws://localhost:8000/visual');
+        ws.onopen = () => document.getElementById('status').textContent = 'Swarm Connected: OM MANI GPU HUM 🕉️';
+        ws.onmessage = (event) => {
+            const { mandala } = JSON.parse(event.data);
+            const { vertices, colors } = mandala;
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 2));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4));
+        };
+        ws.onerror = () => document.getElementById('status').textContent = 'Swarm Disconnected';
+        ws.onclose = () => document.getElementById('status').textContent = 'Swarm Lost';
+
+        function animate() {
+            requestAnimationFrame(animate);
+            points.rotation.z += 0.01;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
