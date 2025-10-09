@@ -1,0 +1,8 @@
+anthropic>=0.3.0
+fastapi>=0.110.0
+pandas>=2.2.0
+plotly>=5.19.0
+sentence-transformers>=2.6.1
+transformers>=4.39.0
+uvicorn>=0.29.0
+pytest>=8.1.0
