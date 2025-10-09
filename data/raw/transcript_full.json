@@ -1,0 +1,7 @@
+{
+  "segments": [
+    {"speaker": "Dave", "timestamp": 0.0, "text": "Welcome to the show."},
+    {"speaker": "Nick", "timestamp": 15.0, "text": "Thanks for having me."},
+    {"speaker": "Dave", "timestamp": 45.0, "text": "According to reports, aid increased."}
+  ]
+}

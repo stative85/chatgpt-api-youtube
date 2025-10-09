@@ -1,0 +1,26 @@
+{
+  "axes": [
+    {
+      "name": "interventionism",
+      "positive_examples": [
+        "We must spread democracy abroad.",
+        "Preemptive strikes keep us safe."
+      ],
+      "negative_examples": [
+        "Close foreign bases immediately.",
+        "We should avoid overseas wars."
+      ]
+    },
+    {
+      "name": "identity_politics",
+      "positive_examples": [
+        "Group identity is essential for justice.",
+        "We need race-based advocacy."
+      ],
+      "negative_examples": [
+        "Individual liberty should guide politics.",
+        "We must judge people as individuals."
+      ]
+    }
+  ]
+}
