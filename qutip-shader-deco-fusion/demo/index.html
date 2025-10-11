@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QUTIP Shader Deco Fusion Demo</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+        background: radial-gradient(circle at 20% 20%, #101525, #020308 80%);
+        color: #e9f0ff;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+      }
+
+      main {
+        width: min(960px, 100vw);
+        margin: 1.5rem;
+        display: grid;
+        gap: 1rem;
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: clamp(1.8rem, 2.5vw, 2.8rem);
+      }
+
+      canvas {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: 18px;
+        background: #000;
+        box-shadow: 0 20px 60px rgba(6, 14, 45, 0.35);
+      }
+
+      .panel {
+        background: rgba(6, 12, 30, 0.8);
+        border: 1px solid rgba(90, 122, 255, 0.3);
+        border-radius: 14px;
+        padding: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .panel label {
+        display: grid;
+        gap: 0.25rem;
+        font-size: 0.9rem;
+      }
+
+      input[type="range"] {
+        width: 180px;
+      }
+
+      button {
+        padding: 0.6rem 1.2rem;
+        border-radius: 999px;
+        border: 1px solid rgba(111, 138, 255, 0.45);
+        background: linear-gradient(120deg, rgba(46, 92, 255, 0.25), rgba(148, 92, 255, 0.25));
+        color: inherit;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 35px rgba(62, 118, 255, 0.25);
+      }
+
+      #fps-panel {
+        display: none;
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 10px;
+        background: rgba(3, 5, 12, 0.82);
+        border: 1px solid rgba(121, 149, 255, 0.35);
+        font-variant-numeric: tabular-nums;
+      }
+
+      footer {
+        font-size: 0.8rem;
+        opacity: 0.7;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>QUTIP Shader Deco Fusion</h1>
+        <p>
+          Quantum-informed volumetric fog rendered in WebGL. Adjust the density, decoherence
+          rate, and sampling depth to feel the phase-damping curve from the QuTiP simulation.
+        </p>
+      </header>
+
+      <section class="panel">
+        <label>
+          Density
+          <input id="density" type="range" min="0.1" max="1.5" step="0.01" value="0.55" />
+        </label>
+        <label>
+          Decoherence (γ)
+          <input id="gamma" type="range" min="0.05" max="1.5" step="0.01" value="0.28" />
+        </label>
+        <label>
+          Steps
+          <input id="steps" type="range" min="16" max="128" step="1" value="64" />
+        </label>
+        <button id="toggle-fps">Toggle FPS</button>
+      </section>
+
+      <canvas id="gl"></canvas>
+      <div id="fps-panel">FPS: <span id="fps-value">0</span></div>
+
+      <footer>
+        Model: ρ₀₁(t) = ρ₀₁(0) · exp(-γt) sampled from QuTiP → applied as optical depth decay.
+      </footer>
+    </main>
+
+    <script type="module">
+      const canvas = document.getElementById("gl");
+      const gl = canvas.getContext("webgl2", { antialias: false, alpha: false });
+
+      if (!gl) {
+        document.body.innerHTML =
+          "<main><h2>WebGL 2 is required</h2><p>Your browser does not support WebGL2 or it is disabled.</p></main>";
+        throw new Error("WebGL2 not supported");
+      }
+
+      const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+      // Example to drive gamma with a CSV exported from QuTiP:
+      // fetch('../qutip/decoherence_samples.csv').then(r => r.text()).then(console.log);
+
+      const vertexSource = `#version 300 es
+        layout(location = 0) in vec2 position;
+        out vec2 vUv;
+        void main() {
+          vUv = position * 0.5 + 0.5;
+          gl_Position = vec4(position, 0.0, 1.0);
+        }
+      `;
+
+      const fragmentSource = `#version 300 es
+        precision highp float;
+
+        in vec2 vUv;
+        out vec4 fragColor;
+
+        uniform float uTime;
+        uniform vec2 uResolution;
+        uniform float uDensity;
+        uniform float uGamma;
+        uniform int uSteps;
+
+        const float PI = 3.14159265359;
+
+        float hash(vec3 p) {
+          return fract(sin(dot(p, vec3(12.9898, 78.233, 32.019))) * 43758.5453);
+        }
+
+        float noise(vec3 p) {
+          vec3 i = floor(p);
+          vec3 f = fract(p);
+          vec3 u = f * f * (3.0 - 2.0 * f);
+
+          float n000 = hash(i + vec3(0.0, 0.0, 0.0));
+          float n001 = hash(i + vec3(0.0, 0.0, 1.0));
+          float n010 = hash(i + vec3(0.0, 1.0, 0.0));
+          float n011 = hash(i + vec3(0.0, 1.0, 1.0));
+          float n100 = hash(i + vec3(1.0, 0.0, 0.0));
+          float n101 = hash(i + vec3(1.0, 0.0, 1.0));
+          float n110 = hash(i + vec3(1.0, 1.0, 0.0));
+          float n111 = hash(i + vec3(1.0, 1.0, 1.0));
+
+          float n00 = mix(n000, n100, u.x);
+          float n01 = mix(n001, n101, u.x);
+          float n10 = mix(n010, n110, u.x);
+          float n11 = mix(n011, n111, u.x);
+
+          float n0 = mix(n00, n10, u.y);
+          float n1 = mix(n01, n11, u.y);
+
+          return mix(n0, n1, u.z);
+        }
+
+        float fbm(vec3 p) {
+          float amplitude = 0.5;
+          float frequency = 1.0;
+          float sum = 0.0;
+          for (int i = 0; i < 5; ++i) {
+            sum += amplitude * noise(p * frequency);
+            frequency *= 2.03;
+            amplitude *= 0.53;
+          }
+          return sum;
+        }
+
+        vec3 sundir = normalize(vec3(0.6, 0.35, -0.45));
+
+        vec4 march(vec3 ro, vec3 rd, float density, float gamma) {
+          float stepLength = 0.02;
+          float total = 0.0;
+          float light = 0.0;
+          float t = 0.0;
+          float deco = 1.0;
+
+          for (int i = 0; i < 128; ++i) {
+            if (i >= uSteps) break;
+            vec3 pos = ro + rd * t;
+            if (pos.y < -1.2 || pos.y > 1.2) break;
+            float shape = fbm(pos * 1.3 + vec3(0.0, uTime * 0.015, 0.0));
+            float cloud = smoothstep(0.35, 0.75, shape);
+            float attenuated = cloud * density * deco * stepLength;
+            total += attenuated;
+
+            float phase = exp(-gamma * t);
+            deco = mix(deco, phase, 0.4);
+
+            float l = max(dot(normalize(vec3(fbm(pos + 0.3) - fbm(pos - 0.3))), sundir), 0.0);
+            light += l * attenuated;
+
+            t += stepLength;
+            if (total > 1.5) break;
+          }
+
+          return vec4(total, light, deco, t);
+        }
+
+        void main() {
+          vec2 uv = (vUv * 2.0 - 1.0);
+          uv.x *= uResolution.x / uResolution.y;
+
+          vec3 ro = vec3(0.0, 0.0, 3.0);
+          vec3 rd = normalize(vec3(uv, -1.5));
+
+          vec4 res = march(ro, rd, uDensity, uGamma);
+
+          float colorStrength = clamp(res.x, 0.0, 1.0);
+          vec3 fogColor = mix(vec3(0.12, 0.2, 0.35), vec3(0.6, 0.75, 0.95), clamp(res.y * 1.8, 0.0, 1.0));
+          vec3 finalColor = mix(vec3(0.02, 0.04, 0.08), fogColor, 1.0 - exp(-colorStrength * 1.25));
+          float glow = pow(clamp(res.y * 0.9, 0.0, 1.0), 1.6);
+          finalColor += glow * vec3(0.28, 0.44, 0.85);
+
+          fragColor = vec4(finalColor, 1.0);
+        }
+      `;
+
+      function compile(type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+          const log = gl.getShaderInfoLog(shader);
+          gl.deleteShader(shader);
+          throw new Error(log || "Shader compile error");
+        }
+        return shader;
+      }
+
+      const program = gl.createProgram();
+      gl.attachShader(program, compile(gl.VERTEX_SHADER, vertexSource));
+      gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragmentSource));
+      gl.linkProgram(program);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        throw new Error(gl.getProgramInfoLog(program) || "Program link error");
+      }
+      gl.useProgram(program);
+
+      const quad = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array([
+          -1, -1,
+          3, -1,
+          -1, 3,
+        ]),
+        gl.STATIC_DRAW
+      );
+
+      const vao = gl.createVertexArray();
+      gl.bindVertexArray(vao);
+      gl.enableVertexAttribArray(0);
+      gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+      const uniforms = {
+        time: gl.getUniformLocation(program, "uTime"),
+        resolution: gl.getUniformLocation(program, "uResolution"),
+        density: gl.getUniformLocation(program, "uDensity"),
+        gamma: gl.getUniformLocation(program, "uGamma"),
+        steps: gl.getUniformLocation(program, "uSteps"),
+      };
+
+      const controls = {
+        density: document.getElementById("density"),
+        gamma: document.getElementById("gamma"),
+        steps: document.getElementById("steps"),
+      };
+
+      const fpsPanel = document.getElementById("fps-panel");
+      const fpsValue = document.getElementById("fps-value");
+      const fpsToggle = document.getElementById("toggle-fps");
+
+      fpsToggle.addEventListener("click", () => {
+        const active = fpsPanel.style.display === "block";
+        fpsPanel.style.display = active ? "none" : "block";
+      });
+
+      function resize() {
+        const width = Math.floor(canvas.clientWidth * DPR);
+        const height = Math.floor(canvas.clientHeight * DPR);
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        gl.uniform2f(uniforms.resolution, canvas.width, canvas.height);
+      }
+
+      window.addEventListener("resize", resize);
+      resize();
+
+      let last = performance.now();
+      let frame = 0;
+      let fpsTimer = 0;
+
+      function render(now) {
+        resize();
+        const delta = (now - last) * 0.001;
+        last = now;
+
+        frame++;
+        fpsTimer += delta;
+        if (fpsTimer >= 0.25) {
+          const fps = Math.round((frame / fpsTimer) * 10) / 10;
+          fpsValue.textContent = fps.toString();
+          frame = 0;
+          fpsTimer = 0;
+        }
+
+        gl.uniform1f(uniforms.time, now * 0.001);
+        gl.uniform1f(uniforms.density, parseFloat(controls.density.value));
+        gl.uniform1f(uniforms.gamma, parseFloat(controls.gamma.value));
+        gl.uniform1i(uniforms.steps, parseInt(controls.steps.value));
+
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+        requestAnimationFrame(render);
+      }
+
+      requestAnimationFrame(render);
+    </script>
+  </body>
+</html>
