@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@neuro-engine/ui": ["../../packages/ui/src"],
+      "@neuro-engine/utils": ["../../packages/utils/src"],
+      "@neuro-engine/schemas": ["../../packages/schemas/src"],
+      "@neuro-engine/models": ["../../packages/models/src"]
+    },
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
+}
