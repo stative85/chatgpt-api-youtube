@@ -1,0 +1,35 @@
+{
+  "name": "@neuro-engine/ai",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "lint": "eslint 'src/**/*.ts'",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "openai": "4.53.0",
+    "anthropic": "0.25.1",
+    "eventemitter3": "5.0.1",
+    "zod": "3.23.8"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "9.4.3",
+    "ioredis": "5.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.12.7",
+    "vitest": "1.5.1",
+    "typescript": "5.4.5"
+  }
+}

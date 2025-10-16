@@ -1,0 +1,24 @@
+{
+  "name": "@neuro-engine/cli",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "bin": {
+    "neuro": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "lint": "eslint 'src/**/*.ts'",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "commander": "12.1.0",
+    "execa": "8.0.1",
+    "ora": "8.0.1"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5",
+    "vitest": "1.5.1"
+  }
+}
