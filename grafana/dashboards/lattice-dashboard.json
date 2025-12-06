@@ -1,0 +1,52 @@
+{
+  "dashboard": {
+    "title": "Chrysalis Lattice Metrics",
+    "panels": [
+      {
+        "title": "Weave Inscriptions",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(inscriptions_total[5m])"
+          }
+        ]
+      },
+      {
+        "title": "Cognitive Sprouts Active",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "cognitive_sprouts_active"
+          }
+        ]
+      },
+      {
+        "title": "Coherence Score Distribution",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "coherence_scores"
+          }
+        ]
+      },
+      {
+        "title": "SHPL Total Power",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "shpl_power_total_mw"
+          }
+        ]
+      },
+      {
+        "title": "Constitutional Violations",
+        "type": "alert-list",
+        "targets": [
+          {
+            "expr": "constitutional_violations_total"
+          }
+        ]
+      }
+    ]
+  }
+}

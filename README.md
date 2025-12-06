@@ -49,6 +49,37 @@ export ANTHROPIC_API_KEY=your_key
 uvicorn src.deployment.api_server:app --reload
 ```
 
+## Chrysalis Lattice Deployment (websim.ai edition)
+
+To spin up the full-stack lattice environment – including FastAPI, Vite frontend,
+Neo4j, Redis, MQTT, and observability – use the bundled Docker workflow tailored
+for simulated `websim.ai` scenarios.
+
+```bash
+# Configure secrets
+cp .env.example .env
+# Update the values in .env for your environment
+
+# Launch the full stack
+chmod +x deploy.sh
+./deploy.sh
+
+# Tear down when finished
+docker compose down
+```
+
+The stack exposes:
+
+- http://localhost:3000 – Vite interface showing nexus health
+- http://localhost:8000 – FastAPI nexus (existing discourse endpoints)
+- http://localhost:8000/docs – OpenAPI docs for the nexus service
+- http://localhost:7474 – Neo4j browser
+- http://localhost:3001 – Grafana dashboard seeded with lattice panels
+
+For local development without Docker you can run `./quick-start.sh`, which
+creates a virtual environment, installs backend requirements, starts the FastAPI
+server via `nexus.api:app`, and launches the Vite dev server for the UI probe.
+
 ## Tests
 
 ```bash
