@@ -35,6 +35,12 @@ class ReconciliationRequest(BaseModel):
 app = FastAPI(title="websim.ai Discourse Analysis API")
 
 
+@app.get("/health")
+async def health() -> Dict[str, str]:
+    """Simple health check endpoint for orchestration probes."""
+    return {"status": "ok"}
+
+
 @app.post("/analyze/ideology", response_model=IdeologyResponse)
 async def map_ideology(profile: SpeakerProfile) -> IdeologyResponse:
     mapper = IdeologyMapper()
