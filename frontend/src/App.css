@@ -1,0 +1,199 @@
+:root {
+  --bg-color: #050505;
+  --panel-bg: #0a0f14;
+  --text-primary: #e0e0e0;
+  --constructor-color: #00ff41;
+  --weaver-primary: #ff00ff;
+  --weaver-secondary: #00f3ff;
+  --scanline-color: rgba(0, 0, 0, 0.5);
+  --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  font-family: 'Courier New', Courier, monospace;
+  overflow: hidden;
+}
+
+.phoenix-app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0) 50%,
+    rgba(0, 0, 0, 0.2) 50%,
+    rgba(0, 0, 0, 0.2)
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 100;
+  animation: flicker 0.15s infinite;
+}
+
+@keyframes flicker {
+  0% {
+    opacity: 0.95;
+  }
+  50% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0.95;
+  }
+}
+
+.viewport {
+  flex: 1;
+  display: flex;
+  position: relative;
+  border-bottom: 2px solid var(--glass-border);
+}
+
+.substrate {
+  flex: 1;
+  position: relative;
+  background: var(--panel-bg);
+  overflow: hidden;
+  border-right: 1px solid var(--glass-border);
+}
+
+.substrate:last-child {
+  border-right: none;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hud-label {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  font-size: 0.8rem;
+  font-weight: bold;
+  letter-spacing: 2px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 0.25rem 0.5rem;
+  border: 1px solid currentColor;
+  z-index: 10;
+  transition: color 0.3s ease;
+}
+
+.constructor-label {
+  color: var(--constructor-color);
+  box-shadow: 0 0 5px var(--constructor-color);
+}
+
+.weaver-label {
+  color: var(--weaver-primary);
+  box-shadow: 0 0 5px var(--weaver-primary);
+  left: auto;
+  right: 1rem;
+}
+
+.bridge-beam {
+  position: absolute;
+  left: 50%;
+  top: 10%;
+  bottom: 10%;
+  width: 2px;
+  background: transparent;
+  transform: translateX(-50%);
+  z-index: 20;
+  transition: all 0.5s ease;
+}
+
+.bridge-beam.active {
+  background: #fff;
+  box-shadow: 0 0 20px 2px #fff;
+  width: 4px;
+}
+
+.bridge-beam.unstable {
+  animation: shake 0.1s infinite;
+  background: #ff0000;
+  box-shadow: 0 0 30px #ff0000;
+}
+
+@keyframes shake {
+  0% {
+    transform: translateX(-52%);
+  }
+  50% {
+    transform: translateX(-48%);
+  }
+  100% {
+    transform: translateX(-52%);
+  }
+}
+
+.controls {
+  padding: 1rem;
+  display: flex;
+  gap: 1rem;
+  background: #000;
+  border-top: 1px solid var(--glass-border);
+}
+
+.btn {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: #888;
+  padding: 0.5rem 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.btn.active-bridge {
+  border-color: #fff;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.console-wrapper {
+  background: #000;
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.prompt {
+  color: var(--constructor-color);
+}
+
+#cmd-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-family: inherit;
+  font-size: inherit;
+  outline: none;
+  caret-color: var(--constructor-color);
+}
