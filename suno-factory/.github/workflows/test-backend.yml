@@ -1,0 +1,39 @@
+name: SunoForge Backend CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'suno-factory/backend/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'suno-factory/backend/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./suno-factory/backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest httpx pytest-asyncio
+
+      - name: Run Unit Tests
+        env:
+          OPENAI_API_KEY: "mock-key-for-testing"
+        run: |
+          pytest tests/
