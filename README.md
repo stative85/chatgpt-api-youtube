@@ -70,11 +70,16 @@ docker compose down
 
 The stack exposes:
 
-- http://localhost:3000 – Vite interface showing nexus health
-- http://localhost:8000 – FastAPI nexus (existing discourse endpoints)
+- http://localhost:3000 – **Chrysalis Lattice Console**: tabbed operator UI exercising every nexus endpoint (health, ideology mapping, tension, audience pressure, reconciliation, Overton). Each tab is prefilled with a sample payload so you can verify the lattice from the browser without curl.
+- http://localhost:8000 – FastAPI nexus (discourse analysis endpoints)
 - http://localhost:8000/docs – OpenAPI docs for the nexus service
 - http://localhost:7474 – Neo4j browser
 - http://localhost:3001 – Grafana dashboard seeded with lattice panels
+
+> **Endpoint prerequisites:** the ideology, reconciliation, and Overton endpoints need
+> server-side training or env vars before they return data instead of 4xx/5xx. See
+> [`configs/README.md`](./configs/README.md) for the training command and the
+> `IDEOLOGY_AXES_PATH` / `OVERTON_DATA_PATH` / `ANTHROPIC_API_KEY` requirements.
 
 For local development without Docker you can run `./quick-start.sh`, which
 creates a virtual environment, installs backend requirements, starts the FastAPI
